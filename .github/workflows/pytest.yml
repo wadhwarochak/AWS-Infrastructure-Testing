@@ -38,7 +38,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v7
         with:
-          python-version: "3.9"
+          python-version: "3.12"
 
       # Step 5: Install Python dependencies
       - name: Install required Python modules
