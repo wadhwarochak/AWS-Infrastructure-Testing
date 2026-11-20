@@ -48,10 +48,21 @@ jobs:
 
       # Step 6: Execute AWS test cases
       - name: Run AWS Test Suite
+        id: pytest
+        continue-on-error: true
         working-directory: ./AWSTestExecutions
         run: |
           pwd
-          pytest --github-report -v --cov=AWSTestCases --cov-report xml:coverage.xml
+          pytest --github-report -v --cov=AWSTestCases --cov-report xml:coverage.xml --junitxml=junit-results.xml
+
+      - name: Send Email Test Report
+        if: always()
+        run: python send_test_report.py
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+
 
       # Step 7: Upload coverage to Codecov
       - name: Upload Coverage to Codecov
@@ -65,3 +76,8 @@ jobs:
         with:
           path: ${{ github.workspace }}/AWSTestExecutions/coverage.xml
           minimum_coverage: 75
+
+
+      - name: Fail workflow if tests failed
+        if: steps.pytest.outcome == 'failure'
+        run: exit 1
