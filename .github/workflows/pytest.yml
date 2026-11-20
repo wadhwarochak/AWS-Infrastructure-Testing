@@ -4,6 +4,7 @@ name: AWS Test Suite With Pytest
 
 on:
   push:
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
