@@ -1,12 +1,15 @@
 # .github/workflows/app.yaml
+
 name: AWS Test Suite With Pytest
-on: push
+
+on:
+  push:
 
 env:
-  AWS_REGION : "us-east-1"   
+  AWS_REGION: us-east-1
+
 permissions:
-      id-token: write 
-      contents: read  
+  contents: read
 
 jobs:
   AWSDeploymentTesting:
@@ -14,40 +17,50 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v2
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v1
+      # Step 2: Configure AWS credentials using GitHub repository secrets
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
-          role-to-assume: arn:aws:iam::357171621133:role/github-oidc-role
-          role-session-name: samplerolesession
-          aws-region: 'us-east-1'
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
+      # Step 3: Verify AWS authentication
+      - name: Verify AWS Identity
+        run: aws sts get-caller-identity
+
+      # Step 4: Setup Python
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v7
         with:
           python-version: "3.9"
 
-      - name: Install required python modules
+      # Step 5: Install Python dependencies
+      - name: Install required Python modules
         run: |
-          python -m pip install --upgrade boto3 moto pytest pytest-github-report pytest-cov coverage pre-commit
+          python -m pip install --upgrade pip
+          pip install boto3 moto pytest pytest-github-report pytest-cov coverage pre-commit
 
-      - name: Run AWS test suite
+      # Step 6: Execute AWS test cases
+      - name: Run AWS Test Suite
         working-directory: ./AWSTestExecutions
         run: |
-          pytest  --github-report -v --cov=AWSTestCases --cov-report xml:coverage.xml
           pwd
+          pytest --github-report -v --cov=AWSTestCases --cov-report xml:coverage.xml
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+      # Step 7: Upload coverage to Codecov
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./AWSTestExecutions/coverage.xml
 
-      - name: Publish code coverage results
+      # Step 8: Publish coverage results
+      - name: Publish Code Coverage Results
         uses: 5monkeys/cobertura-action@master
         with:
           path: ${{ github.workspace }}/AWSTestExecutions/coverage.xml
           minimum_coverage: 75
-
-
-
-
